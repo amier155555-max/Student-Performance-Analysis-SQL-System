@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+{% block title %}Activity Log &middot; {{ app_name }}{% endblock %}
+{% block content %}
+
+<section class="page-head">
+  <p class="eyebrow">Monitoring &middot; Activity log</p>
+  <h1>Activity log</h1>
+  <p class="hero-lede">Every upload, cleaning result, report download and database change is recorded here, newest first.</p>
+</section>
+
+<section class="stat-row">
+  <div class="stat-card">
+    <span class="stat-label">Recorded events</span>
+    <span class="stat-value">{{ events | length }}</span>
+  </div>
+</section>
+
+{% if events %}
+  <div class="log-actions">
+    <form action="{{ url_for('logs_clear') }}" method="post"
+          onsubmit="return confirm('Clear the entire activity log?');">
+      <button type="submit" class="btn btn-ghost">Clear log</button>
+    </form>
+  </div>
+
+  <section class="table-card">
+    <div class="table-scroll">
+      <table class="data-table">
+        <thead>
+          <tr><th>Time</th><th>Level</th><th>Event</th><th>Message</th><th>Details</th></tr>
+        </thead>
+        <tbody>
+          {% for e in events %}
+          <tr>
+            <td class="log-time">{{ e.time | replace('T', ' ') }}</td>
+            <td><span class="log-badge log-{{ e.level }}">{{ e.level }}</span></td>
+            <td><code>{{ e.event }}</code></td>
+            <td>{{ e.message }}</td>
+            <td class="log-details">
+              {% if e.details %}
+                {% for k, v in e.details.items() %}<span class="log-kv">{{ k }}={{ v }}</span>{% endfor %}
+              {% else %}&mdash;{% endif %}
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </section>
+{% else %}
+  <div class="callout">
+    <strong>No activity yet.</strong> Upload a file or download a report and it will appear here.
+  </div>
+{% endif %}
+
+{% endblock %}

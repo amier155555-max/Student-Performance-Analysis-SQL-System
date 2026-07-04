@@ -1,0 +1,112 @@
+{% extends "base.html" %}
+{% block title %}Settings &middot; {{ app_name }}{% endblock %}
+{% block content %}
+
+<section class="page-head">
+  <p class="eyebrow">Project configuration</p>
+  <h1>Settings</h1>
+  <p class="hero-lede">Tune how every future upload gets cleaned and stored. Changes apply the next time a file is processed.</p>
+</section>
+
+<form action="{{ url_for('settings_save') }}" method="post" class="settings-form">
+
+  <div class="settings-card">
+    <h2>General</h2>
+    <div class="field-row">
+      <label for="app_name">Application name</label>
+      <input type="text" id="app_name" name="app_name" value="{{ settings.app_name }}" maxlength="80">
+    </div>
+    <div class="field-row">
+      <label for="records_per_preview_page">Preview rows shown</label>
+      <input type="number" id="records_per_preview_page" name="records_per_preview_page"
+             value="{{ settings.records_per_preview_page }}" min="1" max="1000000" step="1">
+    </div>
+  </div>
+
+  <div class="settings-card">
+    <h2>Cleaning &mdash; missing values</h2>
+    <div class="field-row">
+      <label for="missing_strategy">Fill strategy</label>
+      <select id="missing_strategy" name="missing_strategy">
+        <option value="auto" {{ 'selected' if settings.missing_strategy == 'auto' }}>Auto (median for numbers, most common for text)</option>
+        <option value="fill_mean" {{ 'selected' if settings.missing_strategy == 'fill_mean' }}>Fill with mean / most common</option>
+        <option value="fill_median" {{ 'selected' if settings.missing_strategy == 'fill_median' }}>Fill with median</option>
+        <option value="fill_mode" {{ 'selected' if settings.missing_strategy == 'fill_mode' }}>Fill with most common value</option>
+        <option value="fill_zero" {{ 'selected' if settings.missing_strategy == 'fill_zero' }}>Fill with 0 / "unknown"</option>
+        <option value="drop_rows" {{ 'selected' if settings.missing_strategy == 'drop_rows' }}>Drop rows with any missing value</option>
+      </select>
+    </div>
+    <div class="field-row">
+      <label for="missing_threshold_pct">Drop a column if missing more than (%)</label>
+      <input type="number" id="missing_threshold_pct" name="missing_threshold_pct"
+             value="{{ settings.missing_threshold_pct }}" min="0" max="100">
+    </div>
+  </div>
+
+  <div class="settings-card">
+    <h2>Cleaning &mdash; structure</h2>
+    <div class="field-row checkbox-row">
+      <label><input type="checkbox" name="remove_duplicates" {{ 'checked' if settings.remove_duplicates }}> Remove duplicate rows</label>
+    </div>
+    <div class="field-row checkbox-row">
+      <label><input type="checkbox" name="trim_whitespace" {{ 'checked' if settings.trim_whitespace }}> Trim whitespace &amp; normalize blanks (e.g. "N/A", "?")</label>
+    </div>
+    <div class="field-row checkbox-row">
+      <label><input type="checkbox" name="standardize_column_names" {{ 'checked' if settings.standardize_column_names }}> Standardize column names (lowercase, underscores)</label>
+    </div>
+    <div class="field-row checkbox-row">
+      <label><input type="checkbox" name="coerce_numeric_types" {{ 'checked' if settings.coerce_numeric_types }}> Auto-convert numeric-looking text columns</label>
+    </div>
+  </div>
+
+  <div class="settings-card">
+    <h2>Cleaning &mdash; outliers</h2>
+    <div class="field-row">
+      <label for="outlier_handling">Outlier handling</label>
+      <select id="outlier_handling" name="outlier_handling">
+        <option value="cap_iqr" {{ 'selected' if settings.outlier_handling == 'cap_iqr' }}>Cap to the IQR fence</option>
+        <option value="flag_only" {{ 'selected' if settings.outlier_handling == 'flag_only' }}>Report only, don't change values</option>
+        <option value="none" {{ 'selected' if settings.outlier_handling == 'none' }}>Off</option>
+      </select>
+    </div>
+    <div class="field-row">
+      <label for="outlier_iqr_multiplier">IQR multiplier</label>
+      <input type="number" id="outlier_iqr_multiplier" name="outlier_iqr_multiplier" step="0.1"
+             value="{{ settings.outlier_iqr_multiplier }}" min="0.5" max="5">
+    </div>
+  </div>
+
+  <div class="settings-card">
+    <h2>Database</h2>
+    <div class="field-row checkbox-row">
+      <label><input type="checkbox" name="auto_populate_normalized_schema" {{ 'checked' if settings.auto_populate_normalized_schema }}> Auto-build the normalized schema when the file matches</label>
+    </div>
+    <div class="field-row static-row">
+      <span>Database file</span>
+      <code>{{ settings.database_path }}</code>
+    </div>
+    <div class="field-row static-row">
+      <span>Current size</span>
+      <span>{{ db_size_kb }} KB</span>
+    </div>
+  </div>
+
+  <div class="button-row">
+    <button type="submit" class="btn btn-primary">Save settings</button>
+  </div>
+</form>
+
+<div class="settings-card danger-zone">
+  <h2>Danger zone</h2>
+  <p class="muted">These actions cannot be undone.</p>
+  <div class="button-row">
+    <form action="{{ url_for('settings_reset') }}" method="post">
+      <button type="submit" class="btn btn-ghost">Restore default settings</button>
+    </form>
+    <form action="{{ url_for('database_reset') }}" method="post" onsubmit="return confirm('This will permanently delete all loaded data. Continue?');">
+      <button type="submit" class="btn btn-danger">Clear database</button>
+    </form>
+  </div>
+</div>
+
+{% endblock %}

@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>{% block title %}{{ app_name }}{% endblock %}</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+<div class="page-frame">
+  <header class="site-header">
+    <a class="brand" href="{{ url_for('index') }}">
+      <span class="brand-mark" aria-hidden="true">
+        <svg width="30" height="30" viewBox="0 0 30 30" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <circle cx="15" cy="15" r="14" stroke="currentColor" stroke-width="1.4"/>
+          <path d="M8 18.5L13 12L17 16L22 9.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </span>
+      <span class="brand-text">
+        <span class="brand-title">{{ app_name }}</span>
+        <span class="brand-sub">SQL Analytics Studio</span>
+      </span>
+    </a>
+    <nav class="site-nav">
+      <a href="{{ url_for('index') }}" class="{{ 'active' if request.endpoint == 'index' }}">Upload</a>
+      <a href="{{ url_for('preview') }}" class="{{ 'active' if request.endpoint == 'preview' }}">Preview</a>
+      <a href="{{ url_for('dashboard') }}" class="{{ 'active' if request.endpoint == 'dashboard' }}">Dashboard</a>
+      <a href="{{ url_for('deployment_page') }}" class="{{ 'active' if request.endpoint == 'deployment_page' }}">Deployment</a>
+      <a href="{{ url_for('logs') }}" class="{{ 'active' if request.endpoint == 'logs' }}">Logs</a>
+      <a href="{{ url_for('settings_page') }}" class="{{ 'active' if request.endpoint == 'settings_page' }}">Settings</a>
+    </nav>
+  </header>
+
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+      <div class="flash-stack">
+        {% for category, message in messages %}
+          <div class="flash flash-{{ category }}" role="status">
+            <span class="flash-dot" aria-hidden="true"></span>
+            <span>{{ message }}</span>
+          </div>
+        {% endfor %}
+      </div>
+    {% endif %}
+  {% endwith %}
+
+  <main class="site-main">
+    {% block content %}{% endblock %}
+  </main>
+
+  <footer class="site-footer">
+    <span>{{ app_name }} &middot; Project 6 &mdash; Factors Influencing Student Performance</span>
+    <span>&copy; {{ current_year }}</span>
+  </footer>
+</div>
+</body>
+</html>

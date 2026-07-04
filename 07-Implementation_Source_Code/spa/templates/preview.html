@@ -1,0 +1,138 @@
+{% extends "base.html" %}
+{% block title %}Cleaning report &middot; {{ app_name }}{% endblock %}
+{% block content %}
+
+<section class="page-head">
+  <p class="eyebrow">Milestone 1 &middot; Exploration &amp; preprocessing</p>
+  <h1>Cleaning report</h1>
+  <p class="hero-lede">Here's exactly what changed when <strong>{{ filename }}</strong> went through the pipeline.</p>
+</section>
+
+<section class="stat-row">
+  <div class="stat-card">
+    <span class="stat-label">Rows in</span>
+    <span class="stat-value">{{ report.original_rows }}</span>
+  </div>
+  <div class="stat-card">
+    <span class="stat-label">Rows out</span>
+    <span class="stat-value">{{ report.final_rows }}</span>
+  </div>
+  <div class="stat-card">
+    <span class="stat-label">Duplicates removed</span>
+    <span class="stat-value">{{ report.duplicate_rows_removed }}</span>
+  </div>
+  <div class="stat-card">
+    <span class="stat-label">Empty rows removed</span>
+    <span class="stat-value">{{ report.empty_rows_removed }}</span>
+  </div>
+  <div class="stat-card">
+    <span class="stat-label">Columns out</span>
+    <span class="stat-value">{{ report.final_columns }}</span>
+  </div>
+</section>
+
+{% if schema_matched %}
+<div class="callout callout-good">
+  <strong>Recognized schema.</strong> This file matches the student-performance structure, so it was also
+  split into the normalized tables
+  ({{ normalized_written.keys() | join(', ') }}) for the analytics dashboard.
+  <a href="{{ url_for('dashboard') }}">Open the dashboard &#8594;</a>
+</div>
+{% else %}
+<div class="callout">
+  <strong>Generic dataset.</strong> This file's columns don't match the student-performance schema, so it was
+  stored as a single cleaned table. You can still browse a column-by-column profile on the
+  <a href="{{ url_for('dashboard') }}">dashboard</a>.
+</div>
+{% endif %}
+
+<section class="detail-grid">
+  <div class="detail-card">
+    <h3>Column names standardized</h3>
+    {% if report.renamed_columns %}
+      <table class="mini-table">
+        <thead><tr><th>Original</th><th>Cleaned</th></tr></thead>
+        <tbody>
+        {% for old, new in report.renamed_columns.items() %}
+          <tr><td>{{ old }}</td><td><code>{{ new }}</code></td></tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    {% else %}
+      <p class="muted">No column names needed changes.</p>
+    {% endif %}
+  </div>
+
+  <div class="detail-card">
+    <h3>Columns dropped (too much missing data)</h3>
+    {% if report.dropped_columns %}
+      <ul class="tag-list">
+        {% for col in report.dropped_columns %}<li>{{ col }}</li>{% endfor %}
+      </ul>
+    {% else %}
+      <p class="muted">No columns exceeded the missing-data threshold.</p>
+    {% endif %}
+  </div>
+
+  <div class="detail-card">
+    <h3>Missing values filled ({{ report.missing_value_strategy }})</h3>
+    {% if report.missing_values_before %}
+      <table class="mini-table">
+        <thead><tr><th>Column</th><th>Missing before</th><th>Missing after</th></tr></thead>
+        <tbody>
+        {% for col, count in report.missing_values_before.items() %}
+          <tr>
+            <td>{{ col }}</td>
+            <td>{{ count }}</td>
+            <td>{{ report.missing_values_after.get(col, 0) }}</td>
+          </tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    {% else %}
+      <p class="muted">No missing values were found.</p>
+    {% endif %}
+  </div>
+
+  <div class="detail-card">
+    <h3>Outliers capped (IQR method)</h3>
+    {% if report.outliers_capped %}
+      <table class="mini-table">
+        <thead><tr><th>Column</th><th>Values capped</th></tr></thead>
+        <tbody>
+        {% for col, count in report.outliers_capped.items() %}
+          <tr><td>{{ col }}</td><td>{{ count }}</td></tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    {% else %}
+      <p class="muted">No extreme outliers detected.</p>
+    {% endif %}
+  </div>
+</section>
+
+<section class="table-card">
+  <div class="table-card-head">
+    <h3>Cleaned data preview</h3>
+    <div class="button-row">
+      <a class="btn btn-ghost" href="{{ url_for('download_csv') }}">Download cleaned CSV</a>
+      <a class="btn btn-ghost" href="{{ url_for('download_sql') }}">Download SQL export</a>
+    </div>
+  </div>
+  <div class="table-scroll">
+    <table class="data-table">
+      <thead>
+        <tr>{% for col in columns %}<th>{{ col }}</th>{% endfor %}</tr>
+      </thead>
+      <tbody>
+        {% for row in rows %}
+        <tr>
+          {% for col in columns %}<td>{{ row[col] }}</td>{% endfor %}
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+
+{% endblock %}

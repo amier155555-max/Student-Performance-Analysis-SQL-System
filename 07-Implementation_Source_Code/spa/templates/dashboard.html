@@ -1,0 +1,136 @@
+{% extends "base.html" %}
+{% block title %}Dashboard &middot; {{ app_name }}{% endblock %}
+{% block content %}
+
+<section class="page-head">
+  <p class="eyebrow">Milestone 2 &middot; Hypothesis testing</p>
+  <h1>What actually moves the grade?</h1>
+  <p class="hero-lede">Each panel below runs a fixed SQL query against the cleaned database to test one specific hypothesis about student performance.</p>
+</section>
+
+{% if schema_ready %}
+  <section class="stat-row">
+    <div class="stat-card">
+      <span class="stat-label">Students</span>
+      <span class="stat-value">{{ kpis.students }}</span>
+    </div>
+    <div class="stat-card">
+      <span class="stat-label">Avg. final grade (G3)</span>
+      <span class="stat-value">{{ kpis.avg_g3 if kpis.avg_g3 is not none else '&ndash;' }}</span>
+    </div>
+    <div class="stat-card">
+      <span class="stat-label">Avg. absences</span>
+      <span class="stat-value">{{ kpis.avg_absences if kpis.avg_absences is not none else '&ndash;' }}</span>
+    </div>
+    <div class="stat-card">
+      <span class="stat-label">Schools</span>
+      <span class="stat-value">{{ kpis.schools }}</span>
+    </div>
+  </section>
+
+  <section class="chart-grid">
+    {% for r in results %}
+      <div class="chart-card">
+        <h3>{{ r.title }}</h3>
+        <p class="hypothesis">Hypothesis: {{ r.hypothesis }}</p>
+        {% if r.error %}
+          <p class="muted">Query could not run: {{ r.error }}</p>
+        {% elif r.data %}
+          <div class="chart-canvas-wrap">
+            <canvas class="chart-canvas" data-chart='{{ r.data | tojson }}' data-kind="{{ r.chart }}"></canvas>
+          </div>
+        {% else %}
+          <p class="muted">No data available for this query yet.</p>
+        {% endif %}
+      </div>
+    {% endfor %}
+  </section>
+
+  <section class="callout report-callout">
+    <div>
+      <strong>التقرير النهائي (Final Documentation Report)</strong>
+      <p class="hero-lede">
+        ملف PDF يشرح هيكل قاعدة البيانات، خطوات المعالجة، وأهم النتائج
+        (Insights) مدعومة بكود SQL الفعلي ونتائجه الحقيقية من هذه البيانات.
+      </p>
+    </div>
+    <a class="btn btn-primary" href="{{ url_for('download_documentation') }}">
+      تحميل التقرير النهائي (PDF)
+    </a>
+  </section>
+
+{% else %}
+  <div class="callout">
+    <strong>Generic profile.</strong> The uploaded file didn't match the student-performance schema, so here's a
+    column-by-column summary of what was loaded instead.
+  </div>
+
+  <section class="stat-row">
+    <div class="stat-card">
+      <span class="stat-label">Total rows</span>
+      <span class="stat-value">{{ profile.row_count }}</span>
+    </div>
+    <div class="stat-card">
+      <span class="stat-label">Columns</span>
+      <span class="stat-value">{{ profile.columns | length }}</span>
+    </div>
+    <div class="stat-card">
+      <span class="stat-label">Rows profiled (sample)</span>
+      <span class="stat-value">{{ profile.sampled_rows }}</span>
+    </div>
+  </section>
+
+  <section class="chart-grid">
+    {% for c in profile.columns if c.chart %}
+      <div class="chart-card">
+        <h3>{{ c.name }}</h3>
+        <p class="hypothesis">
+          {% if 'mean' in c %}Numeric &middot; Min / Mean / Max{% else %}Categorical &middot; top values{% endif %}
+        </p>
+        <div class="chart-canvas-wrap">
+          <canvas class="gchart-canvas" data-chart='{{ c.chart | tojson }}'></canvas>
+        </div>
+      </div>
+    {% endfor %}
+  </section>
+
+  <section class="table-card">
+    <div class="table-scroll">
+      <table class="data-table">
+        <thead><tr><th>Column</th><th>Type</th><th>Summary</th></tr></thead>
+        <tbody>
+          {% for c in profile.columns %}
+          <tr>
+            <td>{{ c.name }}</td>
+            <td><code>{{ c.dtype }}</code></td>
+            <td>
+              {% if 'mean' in c %}
+                mean {{ c.mean }} &middot; min {{ c.min }} &middot; max {{ c.max }}
+              {% else %}
+                most common: {{ c.top_value }}
+              {% endif %}
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="callout report-callout">
+    <div>
+      <strong>التقرير النهائي (Final Documentation Report)</strong>
+      <p class="hero-lede">
+        ملف PDF يشرح هيكل الجدول الفعلي لهذا الملف، خطوات المعالجة، وملخص
+        كل عمود (Insights) مدعومًا بكود SQL الفعلي المستخدم لاستخراجه من بياناتك.
+      </p>
+    </div>
+    <a class="btn btn-primary" href="{{ url_for('download_documentation') }}">
+      تحميل التقرير النهائي (PDF)
+    </a>
+  </section>
+{% endif %}
+
+<script src="{{ url_for('static', filename='js/chart.umd.min.js') }}"></script>
+<script src="{{ url_for('static', filename='js/dashboard.js') }}"></script>
+{% endblock %}

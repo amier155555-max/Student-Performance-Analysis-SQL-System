@@ -1,0 +1,8 @@
+[Unit]
+Description=Student Performance Analysis - nightly batch run
+Wants=nightly-analysis.timer
+
+[Service]
+Type=oneshot
+WorkingDirectory=/opt/student-performance/09-Automation_Monitoring
+ExecStart=/usr/bin/python3 nightly_job.py

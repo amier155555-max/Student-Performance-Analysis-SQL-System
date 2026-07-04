@@ -1,0 +1,100 @@
+{% extends "base.html" %}
+{% block title %}Deployment &amp; Automation &middot; {{ app_name }}{% endblock %}
+{% block content %}
+
+<section class="page-head">
+  <p class="eyebrow">Deployment &amp; Automation</p>
+  <h1>Repeatable analysis &amp; nightly batch</h1>
+  <p class="hero-lede">Run the same stored-procedure analysis the deployment package and the scheduled nightly job use — on demand, from here.</p>
+</section>
+
+{% if not schema_ready %}
+  <div class="callout">
+    <strong>No student data loaded.</strong> Upload a student-performance file first, then run the procedures here.
+  </div>
+{% endif %}
+
+<section class="chart-grid">
+  <!-- Stored procedures -->
+  <div class="chart-card">
+    <h3>Stored procedures</h3>
+    <p class="hypothesis">Runs every hypothesis test as a logged, repeatable stored-procedure-equivalent and persists the results.</p>
+    <form action="{{ url_for('deployment_run_procedures') }}" method="post">
+      <button type="submit" class="btn btn-primary">Run stored-procedure analysis</button>
+    </form>
+    <p class="muted" style="margin-top:12px;">
+      Source: <code>08-Deployment_Stored_Procedures/stored_procedures.sql</code>
+      (PostgreSQL) &amp; <code>sqlite_equivalent.py</code> (this app).
+    </p>
+  </div>
+
+  <!-- Nightly batch -->
+  <div class="chart-card">
+    <h3>Nightly batch automation</h3>
+    <p class="hypothesis">Runs the full analysis as a batch job and writes a timestamped JSON report — identical to the scheduled nightly run.</p>
+    <form action="{{ url_for('deployment_run_batch') }}" method="post">
+      <button type="submit" class="btn btn-primary">Run nightly batch now</button>
+    </form>
+    <p class="muted" style="margin-top:12px;">
+      Scheduled via <code>09-Automation_Monitoring/</code> (cron / systemd timer / Task Scheduler).
+    </p>
+  </div>
+</section>
+
+{% if last_batch %}
+  <section class="callout">
+    <strong>Last batch report:</strong> <code>{{ last_batch._file }}</code> &middot;
+    {{ last_batch.succeeded | length }} succeeded, {{ last_batch.failed | length }} failed &middot;
+    finished {{ last_batch.finished_at | replace('T', ' ') }}.
+  </section>
+{% endif %}
+
+{% if run_log %}
+  <h2 style="margin-top:28px;">Run log (audit trail)</h2>
+  <section class="table-card">
+    <div class="table-scroll">
+      <table class="data-table">
+        <thead>
+          <tr><th>Run</th><th>Procedure</th><th>Status</th><th>Rows</th><th>Started</th><th>Finished</th></tr>
+        </thead>
+        <tbody>
+          {% for r in run_log %}
+          <tr>
+            <td>#{{ r.run_id }}</td>
+            <td><code>{{ r.procedure }}</code></td>
+            <td><span class="log-badge log-{{ 'success' if r.status == 'SUCCESS' else 'error' if r.status == 'FAILED' else 'info' }}">{{ r.status }}</span></td>
+            <td>{{ r.row_count if r.row_count is not none else '—' }}</td>
+            <td class="log-time">{{ (r.started_at or '') | replace('T', ' ') }}</td>
+            <td class="log-time">{{ (r.finished_at or '') | replace('T', ' ') }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </section>
+{% endif %}
+
+{% if latest_results %}
+  <h2 style="margin-top:28px;">Latest persisted results</h2>
+  <section class="table-card">
+    <div class="table-scroll">
+      <table class="data-table">
+        <thead>
+          <tr><th>Procedure</th><th>Category</th><th>Avg. final grade (G3)</th><th>Students</th></tr>
+        </thead>
+        <tbody>
+          {% for r in latest_results %}
+          <tr>
+            <td><code>{{ r.procedure }}</code></td>
+            <td>{{ r.category }}</td>
+            <td>{{ r.avg_final_grade }}</td>
+            <td>{{ r.student_count }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </section>
+{% endif %}
+
+{% endblock %}

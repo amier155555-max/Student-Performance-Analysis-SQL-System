@@ -1,0 +1,9 @@
+{% extends "base.html" %}
+{% block title %}Page not found &middot; {{ app_name }}{% endblock %}
+{% block content %}
+<section class="page-head" style="text-align:center; padding: 4rem 0;">
+  <p class="eyebrow">404</p>
+  <h1>That page doesn't exist.</h1>
+  <p class="hero-lede">Head back to the <a href="{{ url_for('index') }}">upload page</a> to get started.</p>
+</section>
+{% endblock %}

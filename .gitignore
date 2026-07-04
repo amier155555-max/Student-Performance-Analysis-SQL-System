@@ -1,0 +1,28 @@
+# ---- Python ----
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+env/
+
+# ---- Flask app runtime data (regenerated at runtime, never committed) ----
+07-Implementation_Source_Code/spa/data/uploads/*
+07-Implementation_Source_Code/spa/data/cleaned/*
+07-Implementation_Source_Code/spa/data/db/*
+07-Implementation_Source_Code/spa/data/settings.json
+07-Implementation_Source_Code/spa/data/activity_log.jsonl
+
+# ---- Automation outputs ----
+09-Automation_Monitoring/logs/*
+09-Automation_Monitoring/reports/*
+
+# keep the empty-folder placeholders
+!**/.gitkeep
+
+# ---- Editor / OS / tooling ----
+.claude/
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
