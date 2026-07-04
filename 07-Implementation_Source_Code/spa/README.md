@@ -12,9 +12,9 @@ Raw file  →  Clean  →  SQL database  →  Insights
 
 ## What it does
 
-1. **Upload (Milestone 1)** — the landing page accepts the client's raw
+1. **Upload** — the landing page accepts the client's raw
    file (`.csv`, `.tsv`, `.xlsx`, `.xls`).
-2. **Clean & load (Milestone 1)** — the file is automatically:
+2. **Clean & load** — the file is automatically:
    - column names standardized (lowercase, underscores)
    - whitespace trimmed and blank markers (`N/A`, `?`, `-`, …) normalized
    - fully empty rows removed, columns that are mostly empty dropped
@@ -22,7 +22,7 @@ Raw file  →  Clean  →  SQL database  →  Insights
    - numeric-looking text columns coerced to numbers
    - missing values filled using the strategy set on the Settings page
    - statistical outliers capped using the IQR method
-3. **Store (Milestone 1 → 2)** — the cleaned data is always saved as a
+3. **Store** — the cleaned data is always saved as a
    flat `cleaned_data` table. If the columns match the student-performance
    dataset, it is also split into the normalized relational schema
    (`student`, `family`, `enrollment`, `study_behavior`, `grade`) so SQL
@@ -30,7 +30,7 @@ Raw file  →  Clean  →  SQL database  →  Insights
 4. **Preview** — a report shows exactly what changed (renamed columns,
    dropped columns, duplicates removed, missing values filled, outliers
    capped) plus a sample of the cleaned rows.
-5. **Dashboard (Milestone 2)** — a set of fixed, named SQL queries test
+5. **Dashboard** — a set of fixed, named SQL queries test
    specific hypotheses (study time vs. grade, absences vs. grade,
    parental education vs. grade, alcohol use vs. grade, etc.) and render
    as charts. Uploads that don't match the education schema fall back to
@@ -49,7 +49,7 @@ modules/
   data_cleaner.py          Generic, reusable cleaning pipeline
   schema_mapper.py         Maps cleaned data onto the normalized schema
   db_manager.py            SQLite read/write (parameterized, injection-safe)
-  analytics.py             Hypothesis-testing SQL queries (Milestone 2)
+  analytics.py             Hypothesis-testing SQL queries
 templates/                 Jinja2 HTML (upload, preview, dashboard, settings)
 static/css/style.css       Design system (calm sage / warm paper palette)
 static/js/                 Dropzone interactivity + Chart.js rendering

@@ -1,7 +1,7 @@
 """
 modules/report_builder.py
 --------------------------
-Milestone 5 - "Final Documentation Report" generator.
+Final Documentation Report generator.
 
 Builds a single Markdown document (in English) that explains:
   1. Database schema (design + the actual runtime SQLite tables)
@@ -315,9 +315,9 @@ def build_documentation(db_path: str) -> str:
           (`cleaned_data` + the normalized tables), not static sample data; so
           loading new data from the upload page and re-downloading this report
           will refresh all numbers and conclusions automatically.
-        - For the repeatable, auditable queries (Milestone 3) see
+        - For the repeatable, auditable queries see
           `08-Deployment_Stored_Procedures/stored_procedures.sql`.
-        - For the scheduled automation and monitoring (Milestone 4) see
+        - For the scheduled automation and monitoring see
           `09-Automation_Monitoring/nightly_job.py`.
     """).strip())
     lines.append("")

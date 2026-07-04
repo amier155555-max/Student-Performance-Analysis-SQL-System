@@ -1,7 +1,7 @@
 """
 modules/analytics.py
 ----------------------
-Milestone 2 - "Build analytical queries for hypothesis testing".
+Analytical SQL queries for hypothesis testing.
 
 Each function below is a fixed, developer-authored SQL query (never
 built from user input) that tests one specific, named hypothesis about

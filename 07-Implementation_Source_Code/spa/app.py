@@ -8,7 +8,7 @@ Routes
 GET  /                 Landing page - upload the raw file from the client
 POST /upload            Handle the upload, run the cleaning pipeline, load DB
 GET  /preview            Before/after cleaning report + sample of cleaned rows
-GET  /dashboard          Hypothesis-testing analytics (Milestone 2)
+GET  /dashboard          Hypothesis-testing analytics
 GET  /settings           View current settings
 POST /settings           Save updated settings
 POST /settings/reset      Restore default settings
@@ -181,7 +181,7 @@ def preview():
 
 
 # ----------------------------------------------------------------------
-# Dashboard (Milestone 2 - hypothesis testing queries)
+# Dashboard (hypothesis-testing queries)
 # ----------------------------------------------------------------------
 @app.route("/dashboard")
 def dashboard():
@@ -208,7 +208,7 @@ def dashboard():
 
 
 # ----------------------------------------------------------------------
-# Settings (Milestone: project configuration)
+# Settings (project configuration)
 # ----------------------------------------------------------------------
 @app.route("/settings", methods=["GET"])
 def settings_page():
@@ -312,9 +312,9 @@ def download_sql():
 
 @app.route("/download/documentation")
 def download_documentation():
-    """Milestone 5 - generate and download the final Arabic documentation
-    report (schema explanation + processing steps + data-driven insights
-    with the SQL that proves each one), built live from the current DB.
+    """Generate and download the final documentation report (schema
+    explanation + processing steps + data-driven insights with the SQL
+    that proves each one), built live from the current DB.
 
     Served as a PDF; if the PDF libraries/fonts are unavailable, it falls
     back to the Markdown version so the button always works."""
@@ -351,8 +351,7 @@ def download_documentation():
 
 
 # ----------------------------------------------------------------------
-# Deployment & Automation (Milestone 3 - stored procedures;
-#                          Milestone 4 - nightly / batch automation)
+# Deployment & Automation (stored procedures; nightly / batch automation)
 # ----------------------------------------------------------------------
 @app.route("/deployment")
 def deployment_page():
@@ -369,12 +368,18 @@ def deployment_page():
     )
 
 
+def _student_schema_ready(db_path):
+    tables = db_manager.list_tables(db_path)
+    return "student" in tables and "grade" in tables
+
+
 @app.route("/deployment/run-procedures", methods=["POST"])
 def deployment_run_procedures():
     settings = config.load_settings()
     db_path = settings["database_path"]
-    if not os.path.exists(db_path):
-        flash("No data loaded yet. Upload a student file first.", "error")
+    if not _student_schema_ready(db_path):
+        flash("Upload a student-performance file first — the analysis needs the "
+              "student/grade tables to run.", "error")
         return redirect(url_for("deployment_page"))
     summary = deployment.run_procedures(db_path)
     n_ok, n_failed = len(summary["ok"]), len(summary["failed"])
@@ -391,8 +396,9 @@ def deployment_run_procedures():
 def deployment_run_batch():
     settings = config.load_settings()
     db_path = settings["database_path"]
-    if not os.path.exists(db_path):
-        flash("No data loaded yet. Upload a student file first.", "error")
+    if not _student_schema_ready(db_path):
+        flash("Upload a student-performance file first — the batch analysis needs "
+              "the student/grade tables to run.", "error")
         return redirect(url_for("deployment_page"))
     result = deployment.run_batch(db_path)
     n_ok, n_failed = len(result["ok"]), len(result["failed"])
@@ -408,7 +414,7 @@ def deployment_run_batch():
 
 
 # ----------------------------------------------------------------------
-# Activity log (Milestone 4 - monitoring / auditability)
+# Activity log (monitoring / auditability)
 # ----------------------------------------------------------------------
 @app.route("/logs")
 def logs():

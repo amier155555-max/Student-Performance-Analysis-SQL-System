@@ -1,8 +1,8 @@
 """
 modules/deployment.py
 ----------------------
-GUI bridge for Milestone 3 (stored procedures for repeat analysis) and
-Milestone 4 (nightly / batch automation).
+GUI bridge for the stored procedures (repeatable analysis) and the
+nightly / batch automation.
 
 It reuses the exact same "stored procedure" implementation that the
 deployment package and the nightly job use
@@ -10,11 +10,11 @@ deployment package and the nightly job use
 the GUI trigger identical logic to the command-line / scheduled runs — no
 duplicated analysis SQL.
 
-  * run_procedures()  -> Milestone 3: run every stored-procedure-equivalent,
-                          logging each run and persisting results.
-  * run_batch()       -> Milestone 4: the same run, plus a timestamped JSON
-                          report written to 09-Automation_Monitoring/reports,
-                          exactly like nightly_job.py produces on a schedule.
+  * run_procedures()  -> run every stored-procedure-equivalent, logging each
+                          run and persisting results.
+  * run_batch()       -> the same run, plus a timestamped JSON report written
+                          to 09-Automation_Monitoring/reports, exactly like
+                          nightly_job.py produces on a schedule.
   * run_log() / latest_results() -> read back what the procedures recorded.
 """
 
@@ -42,12 +42,12 @@ import sqlite_equivalent as _sp  # noqa: E402  (path set above)
 
 
 def run_procedures(db_path: str) -> dict:
-    """Milestone 3 — run all stored-procedure-equivalents once."""
+    """Run all stored-procedure-equivalents once."""
     return _sp.run_all_analyses(db_path)
 
 
 def latest_results(db_path: str) -> list[dict]:
-    """Latest persisted result rows per procedure (Milestone 3 output)."""
+    """Latest persisted result rows per procedure."""
     try:
         return _sp.latest_results(db_path)
     except Exception:  # noqa: BLE001
@@ -75,7 +75,7 @@ def run_log(db_path: str, limit: int = 20) -> list[dict]:
 
 
 def run_batch(db_path: str) -> dict:
-    """Milestone 4 — run the analysis as a batch job and write a JSON report
+    """Run the analysis as a batch job and write a JSON report
     snapshot into 09-Automation_Monitoring/reports (same output the scheduled
     nightly_job.py produces). Returns a status summary."""
     started = dt.datetime.now(dt.timezone.utc)
