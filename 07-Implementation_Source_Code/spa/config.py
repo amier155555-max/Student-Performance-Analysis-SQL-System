@@ -14,10 +14,15 @@ import os
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
-UPLOAD_DIR = os.path.join(BASE_DIR, "data", "uploads")
-CLEANED_DIR = os.path.join(BASE_DIR, "data", "cleaned")
-DB_DIR = os.path.join(BASE_DIR, "data", "db")
-SETTINGS_FILE = os.path.join(BASE_DIR, "data", "settings.json")
+# All runtime data lives under DATA_DIR. On a host with a persistent disk
+# (e.g. Render), set SPA_DATA_DIR to the mounted disk path so uploads and the
+# SQLite database survive restarts; otherwise it defaults to ./data.
+DATA_DIR = os.environ.get("SPA_DATA_DIR", os.path.join(BASE_DIR, "data"))
+
+UPLOAD_DIR = os.path.join(DATA_DIR, "uploads")
+CLEANED_DIR = os.path.join(DATA_DIR, "cleaned")
+DB_DIR = os.path.join(DATA_DIR, "db")
+SETTINGS_FILE = os.path.join(DATA_DIR, "settings.json")
 DEFAULT_DB_PATH = os.path.join(DB_DIR, "student_performance.db")
 
 ALLOWED_EXTENSIONS = {"csv", "xlsx", "xls", "tsv"}

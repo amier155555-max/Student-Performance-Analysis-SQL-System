@@ -19,7 +19,7 @@ from datetime import datetime
 
 import config
 
-LOG_PATH = os.path.join(config.BASE_DIR, "data", "activity_log.jsonl")
+LOG_PATH = os.path.join(config.DATA_DIR, "activity_log.jsonl")
 
 # Recognized levels -> used only for colour-coding in the UI.
 LEVELS = {"info", "success", "warning", "error"}

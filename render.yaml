@@ -1,0 +1,16 @@
+# Render Blueprint — deploys the Flask GUI in 07-Implementation_Source_Code/spa.
+# Docs: https://render.com/docs/blueprint-spec
+services:
+  - type: web
+    name: student-performance-analysis
+    runtime: python
+    plan: free
+    rootDir: 07-Implementation_Source_Code/spa
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn app:app --bind 0.0.0.0:$PORT --workers 1 --timeout 120
+    envVars:
+      - key: PYTHON_VERSION
+        value: "3.12.7"
+      # A signing key for Flask sessions; Render generates a random secret.
+      - key: SPA_SECRET_KEY
+        generateValue: true
