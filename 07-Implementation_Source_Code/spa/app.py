@@ -197,6 +197,7 @@ def dashboard():
     kpis = analytics.summary_stats(db_path) if schema_ready else None
     results = analytics.run_all(db_path) if schema_ready else []
     profile = analytics.generic_profile(db_path) if not schema_ready else None
+    generic = analytics.generic_analysis(db_path) if not schema_ready else None
 
     return render_template(
         "dashboard.html",
@@ -204,6 +205,7 @@ def dashboard():
         kpis=kpis,
         results=results,
         profile=profile,
+        generic=generic,
     )
 
 

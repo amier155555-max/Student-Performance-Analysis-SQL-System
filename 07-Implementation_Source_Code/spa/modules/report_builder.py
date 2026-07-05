@@ -126,6 +126,7 @@ def build_documentation(db_path: str) -> str:
     kpis = analytics.summary_stats(db_path) if schema_ready else None
     results = analytics.run_all(db_path) if schema_ready else []
     profile = None if schema_ready else analytics.generic_profile(db_path)
+    generic = None if schema_ready else analytics.generic_analysis(db_path)
 
     lines: list[str] = []
     lines.append("# Final Documentation Report")
@@ -220,12 +221,51 @@ def build_documentation(db_path: str) -> str:
             f"The data currently loaded in `cleaned_data` contains "
             f"**{profile.get('row_count', 0) if profile else 0}** rows and "
             f"**{len(cols)}** columns. Since this is a generic file (not the student "
-            "schema), the system shows a statistical summary of each column backed by "
-            "the actual SQL used to produce it:"
+            "schema), the system auto-detects an outcome column and analyses every "
+            "other column against it, then summarises each column individually — all "
+            "backed by the actual SQL used."
         )
         lines.append("")
 
         insight_no = 1
+
+        # ---- Auto relationship analysis (outcome vs each driver) ----
+        if generic and generic.get("target") and generic.get("insights"):
+            target = generic["target"]
+            lines.append(f"### {insight_no}. Auto-detected outcome: `{target}`")
+            lines.append(
+                f"The system picked **{target}** as the outcome/target column "
+                f"(average **{_fmt_number(generic.get('target_avg'))}**) and compared "
+                "every other column against it, as shown below."
+            )
+            lines.append("")
+            insight_no += 1
+
+            for entry in generic["insights"]:
+                if entry.get("error") or not entry.get("data"):
+                    continue
+                lines.append(f"### {insight_no}. {entry['title']}")
+                lines.append(f"**Hypothesis:** {entry['hypothesis']}")
+                lines.append("")
+                lines.append("**SQL used to prove this result:**")
+                lines.append(_sql_block(entry["sql"]))
+                lines.append("")
+                lines.append("**Actual results returned by this query:**")
+                lines.append("")
+                lines.append(f"[[chart:{entry.get('chart', 'bar')}]]")
+                lines.append(f"| {entry['feature']} | Avg {target} | Records |")
+                lines.append("|---|---|---|")
+                for row in entry["data"]:
+                    lines.append(
+                        f"| {row.get('category')} | {_fmt_number(row.get('avg_value'))} | "
+                        f"{row.get('record_count')} |"
+                    )
+                lines.append("")
+                insight_no += 1
+
+        # ---- Per-column statistical summaries ----
+        lines.append("### Column-by-column summary")
+        lines.append("")
         for c in numeric_cols:
             lines.append(f"### {insight_no}. Numeric column `{c['name']}`")
             lines.append(

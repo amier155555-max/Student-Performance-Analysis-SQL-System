@@ -61,8 +61,13 @@
 
 {% else %}
   <div class="callout">
-    <strong>Generic profile.</strong> The uploaded file didn't match the student-performance schema, so here's a
-    column-by-column summary of what was loaded instead.
+    <strong>Generic dataset — auto analysis.</strong>
+    {% if generic and generic.target %}
+      This file didn't match the student-performance schema, so the system auto-detected
+      <strong>{{ generic.target }}</strong> as the outcome and analysed every other column against it.
+    {% else %}
+      The uploaded file didn't match the student-performance schema, so here's a column-by-column summary instead.
+    {% endif %}
   </div>
 
   <section class="stat-row">
@@ -74,12 +79,41 @@
       <span class="stat-label">Columns</span>
       <span class="stat-value">{{ profile.columns | length }}</span>
     </div>
+    {% if generic and generic.target %}
+    <div class="stat-card">
+      <span class="stat-label">Outcome ({{ generic.target }})</span>
+      <span class="stat-value">Avg {{ generic.target_avg if generic.target_avg is not none else '&ndash;' }}</span>
+    </div>
+    {% else %}
     <div class="stat-card">
       <span class="stat-label">Rows profiled (sample)</span>
       <span class="stat-value">{{ profile.sampled_rows }}</span>
     </div>
+    {% endif %}
   </section>
 
+  {% if generic and generic.insights %}
+    <h2 style="margin:26px 0 6px;">What drives {{ generic.target }}?</h2>
+    <section class="chart-grid">
+      {% for r in generic.insights if r.chart_data %}
+        <div class="chart-card">
+          <h3>{{ r.title }}</h3>
+          <p class="hypothesis">Hypothesis: {{ r.hypothesis }}</p>
+          {% if r.error %}
+            <p class="muted">Query could not run: {{ r.error }}</p>
+          {% elif r.data %}
+            <div class="chart-canvas-wrap">
+              <canvas class="gchart-canvas" data-chart='{{ r.chart_data | tojson }}'></canvas>
+            </div>
+          {% else %}
+            <p class="muted">No data for this relationship.</p>
+          {% endif %}
+        </div>
+      {% endfor %}
+    </section>
+  {% endif %}
+
+  <h2 style="margin:26px 0 6px;">Column-by-column profile</h2>
   <section class="chart-grid">
     {% for c in profile.columns if c.chart %}
       <div class="chart-card">

@@ -228,3 +228,139 @@ def generic_profile(db_path: str, table_name: str = "cleaned_data") -> dict:
     except db_manager.DatabaseError:
         pass
     return profile
+
+
+# Column-name keywords that hint a numeric column is an outcome/target worth
+# analysing everything else against.
+_TARGET_KEYWORDS = (
+    "score", "grade", "gpa", "mark", "result", "final", "total", "target",
+    "rating", "price", "sales", "revenue", "amount", "salary", "income", "output",
+)
+
+
+def _is_id_like(name: str) -> bool:
+    n = name.lower()
+    return n == "id" or n.endswith("_id") or n.startswith("id_") or n == "index"
+
+
+def generic_analysis(db_path: str, table_name: str = "cleaned_data",
+                      max_features: int = 8) -> dict:
+    """General, dataset-agnostic relationship analysis for ANY uploaded file.
+
+    Picks a numeric "target" column (an outcome like a score/price/rating) and
+    compares every other column against it, exactly like the student dashboard
+    tests hypotheses — but for whatever columns the file happens to have:
+      * categorical column -> average target per category (bar chart)
+      * numeric column     -> average target across value quartiles (line chart)
+
+    Returns {target, target_avg, row_count, insights:[...]} where each insight
+    carries its title, hypothesis, the actual SQL, the returned rows, and a
+    `chart` spec the dashboard/PDF can draw. Returns target=None when the file
+    has no usable numeric outcome column.
+    """
+    result = {"target": None, "target_avg": None, "row_count": 0, "insights": []}
+    if not db_manager.table_exists(db_path, table_name):
+        return result
+    try:
+        sample = db_manager.run_query(db_path, f'SELECT * FROM "{table_name}" LIMIT 20000;')
+    except db_manager.DatabaseError:
+        return result
+    if sample.empty:
+        return result
+
+    numeric_cols, categorical_cols = [], []
+    for col in sample.columns:
+        s = sample[col]
+        if pd.api.types.is_numeric_dtype(s) and s.notna().sum() > 1:
+            variance = float(s.var()) if s.var() == s.var() else 0.0  # NaN guard
+            numeric_cols.append((col, _is_id_like(col), variance))
+        else:
+            nun = int(s.nunique(dropna=True))
+            if 2 <= nun <= 12:
+                categorical_cols.append(col)
+
+    non_id_numeric = [c for c, is_id, _ in numeric_cols if not is_id]
+    if not non_id_numeric:
+        return result
+
+    target = next((c for c in non_id_numeric
+                   if any(k in c.lower() for k in _TARGET_KEYWORDS)), None)
+    if target is None:
+        target = max(((c, v) for c, is_id, v in numeric_cols if not is_id),
+                      key=lambda x: x[1])[0]
+    result["target"] = target
+
+    try:
+        row = db_manager.run_query(
+            db_path, f'SELECT ROUND(AVG("{target}"), 2) AS a, COUNT(*) AS n FROM "{table_name}";')
+        result["target_avg"] = float(row.iloc[0]["a"]) if row.iloc[0]["a"] is not None else None
+        result["row_count"] = int(row.iloc[0]["n"])
+    except db_manager.DatabaseError:
+        return result
+
+    specs = []
+    # Categorical drivers -> average target per category (bar).
+    for c in categorical_cols:
+        if c == target:
+            continue
+        specs.append({
+            "id": f"cat_{c}", "chart": "bar", "feature": c,
+            "title": f"{target} by {c}",
+            "hypothesis": f"Average {target} differs across {c} groups.",
+            "sql": (f'SELECT "{c}" AS category,\n'
+                     f'       ROUND(AVG("{target}"), 2) AS avg_value,\n'
+                     f'       COUNT(*) AS record_count\n'
+                     f'FROM {table_name}\n'
+                     f'GROUP BY "{c}"\n'
+                     f'ORDER BY avg_value DESC\n'
+                     f'LIMIT 12;'),
+        })
+
+    # Numeric drivers -> average target across quartile buckets (line).
+    for c, is_id, _ in numeric_cols:
+        if is_id or c == target:
+            continue
+        vals = sample[c].dropna()
+        if vals.nunique() < 4:
+            continue
+        q1, q2, q3 = (round(float(vals.quantile(q)), 4) for q in (0.25, 0.5, 0.75))
+        if not (q1 < q2 < q3):
+            continue
+        specs.append({
+            "id": f"num_{c}", "chart": "line", "feature": c,
+            "title": f"{target} by {c} (quartiles)",
+            "hypothesis": f"{target} changes as {c} increases.",
+            "sql": (f"SELECT CASE\n"
+                     f"         WHEN \"{c}\" <= {q1} THEN 'Q1 (low)'\n"
+                     f"         WHEN \"{c}\" <= {q2} THEN 'Q2'\n"
+                     f"         WHEN \"{c}\" <= {q3} THEN 'Q3'\n"
+                     f"         ELSE 'Q4 (high)'\n"
+                     f"       END AS category,\n"
+                     f'       ROUND(AVG("{target}"), 2) AS avg_value,\n'
+                     f'       COUNT(*) AS record_count\n'
+                     f'FROM {table_name}\n'
+                     f'GROUP BY category\n'
+                     f'ORDER BY MIN("{c}");'),
+        })
+
+    for spec in specs[:max_features]:
+        entry = dict(spec)
+        try:
+            df = db_manager.run_query(db_path, spec["sql"])
+            rows = df.to_dict(orient="records")
+            entry["data"] = rows
+            entry["error"] = None
+            entry["chart_data"] = {
+                "type": spec["chart"],
+                "x_label": spec["feature"],
+                "y_label": f"Avg {target}",
+                "labels": [str(r["category"]) for r in rows],
+                "values": [r["avg_value"] for r in rows],
+            }
+        except db_manager.DatabaseError as exc:
+            entry["data"] = []
+            entry["error"] = str(exc)
+            entry["chart_data"] = None
+        result["insights"].append(entry)
+
+    return result
