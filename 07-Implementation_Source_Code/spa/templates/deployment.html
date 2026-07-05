@@ -8,9 +8,9 @@
   <p class="hero-lede">Run the same stored-procedure analysis the deployment package and the scheduled nightly job use — on demand, from here.</p>
 </section>
 
-{% if not schema_ready %}
+{% if not has_data %}
   <div class="callout">
-    <strong>No student data loaded.</strong> Upload a student-performance file first, then run the procedures here.
+    <strong>No data loaded.</strong> Upload any dataset with a numeric outcome column first, then run the analysis here.
   </div>
 {% endif %}
 

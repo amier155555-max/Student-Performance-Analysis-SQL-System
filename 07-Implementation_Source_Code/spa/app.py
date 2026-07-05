@@ -359,32 +359,33 @@ def download_documentation():
 def deployment_page():
     settings = config.load_settings()
     db_path = settings["database_path"]
-    schema_ready = "student" in db_manager.list_tables(db_path) and \
-                   "grade" in db_manager.list_tables(db_path)
+    has_data = "cleaned_data" in db_manager.list_tables(db_path)
     return render_template(
         "deployment.html",
-        schema_ready=schema_ready,
+        has_data=has_data,
         run_log=deployment.run_log(db_path),
         latest_results=deployment.latest_results(db_path),
         last_batch=deployment.last_batch_report(),
     )
 
 
-def _student_schema_ready(db_path):
-    tables = db_manager.list_tables(db_path)
-    return "student" in tables and "grade" in tables
+def _no_data_msg():
+    return ("Upload a file first — the analysis needs data with at least one "
+            "numeric outcome column (e.g. a score, grade, or price).")
 
 
 @app.route("/deployment/run-procedures", methods=["POST"])
 def deployment_run_procedures():
     settings = config.load_settings()
     db_path = settings["database_path"]
-    if not _student_schema_ready(db_path):
-        flash("Upload a student-performance file first — the analysis needs the "
-              "student/grade tables to run.", "error")
+    if "cleaned_data" not in db_manager.list_tables(db_path):
+        flash(_no_data_msg(), "error")
         return redirect(url_for("deployment_page"))
     summary = deployment.run_procedures(db_path)
     n_ok, n_failed = len(summary["ok"]), len(summary["failed"])
+    if not n_ok and not n_failed:
+        flash(_no_data_msg(), "error")
+        return redirect(url_for("deployment_page"))
     activity_log.log_event(
         "procedures", "Ran stored-procedure analysis.",
         "success" if not n_failed else "warning", succeeded=n_ok, failed=n_failed,
@@ -398,12 +399,14 @@ def deployment_run_procedures():
 def deployment_run_batch():
     settings = config.load_settings()
     db_path = settings["database_path"]
-    if not _student_schema_ready(db_path):
-        flash("Upload a student-performance file first — the batch analysis needs "
-              "the student/grade tables to run.", "error")
+    if "cleaned_data" not in db_manager.list_tables(db_path):
+        flash(_no_data_msg(), "error")
         return redirect(url_for("deployment_page"))
     result = deployment.run_batch(db_path)
     n_ok, n_failed = len(result["ok"]), len(result["failed"])
+    if not n_ok and not n_failed:
+        flash(_no_data_msg(), "error")
+        return redirect(url_for("deployment_page"))
     activity_log.log_event(
         "batch", "Ran nightly batch analysis on demand.",
         "success" if not n_failed else "warning",
